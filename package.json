@@ -1,0 +1,59 @@
+{
+  "name": "aiignore-cli",
+  "version": "1.0.0",
+  "description": "One command to protect your secrets from all AI coding tools",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "aiignore": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "ai",
+    "ignore",
+    "security",
+    "secrets",
+    "ai-security",
+    "ai-ignore",
+    "cursor",
+    "cursorignore",
+    "cursor-ignore",
+    "claude-code",
+    "claude-ignore",
+    "copilot",
+    "gemini",
+    "geminiignore",
+    "windsurf",
+    "codeium",
+    "codeiumignore",
+    "jetbrains",
+    "aiignore",
+    "dotfiles"
+  ],
+  "author": "yjcho9317",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "commander": "^14.0.3",
+    "fast-glob": "^3.3.3",
+    "ora": "^9.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
