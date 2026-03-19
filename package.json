@@ -1,6 +1,6 @@
 {
   "name": "aiignore-cli",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "One command to protect your secrets from all AI coding tools",
   "type": "module",
   "main": "dist/index.js",

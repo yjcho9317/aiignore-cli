@@ -13,7 +13,7 @@ npx aiignore-cli init
 Or install globally:
 
 ```bash
-npm install -g aiignore
+npm install -g aiignore-cli
 aiignore init
 ```
 
@@ -30,6 +30,14 @@ You could. A `.cursorignore` takes 30 seconds to write. But:
 `aiignore` does the research for you. The security data behind each tool is the real value — the CLI just applies it.
 
 ## Commands
+
+### `aiignore init`
+
+![aiignore init](assets/init.png)
+
+### `aiignore verify`
+
+![aiignore verify](assets/verify.png)
 
 ```bash
 aiignore                             # same as aiignore init

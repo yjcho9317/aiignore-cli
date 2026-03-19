@@ -8,7 +8,7 @@ const program = new Command();
 program
   .name('aiignore')
   .description('Protect your secrets from AI coding tools')
-  .version('1.0.0');
+  .version('1.0.2');
 
 program
   .command('init', { isDefault: true })

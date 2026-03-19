@@ -13,7 +13,7 @@ npx aiignore-cli init
 또는 전역 설치:
 
 ```bash
-npm install -g aiignore
+npm install -g aiignore-cli
 aiignore init
 ```
 
@@ -30,6 +30,14 @@ Node.js 18 이상.
 `aiignore`가 조사를 대신 해준다. 각 도구의 보안 현황 데이터가 진짜 가치고, CLI는 그걸 적용하는 수단이다.
 
 ## 명령어
+
+### `aiignore init`
+
+![aiignore init](assets/init.png)
+
+### `aiignore verify`
+
+![aiignore verify](assets/verify.png)
 
 ```bash
 aiignore                             # aiignore init과 동일
