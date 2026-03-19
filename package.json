@@ -1,11 +1,12 @@
 {
   "name": "aiignore-cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "One command to protect your secrets from all AI coding tools",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "aiignore": "dist/index.js"
+    "aiignore": "dist/index.js",
+    "aiignore-cli": "dist/index.js"
   },
   "scripts": {
     "build": "tsup",

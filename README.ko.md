@@ -7,7 +7,7 @@ AI 도구마다 ignore 방식이 다르다 — `.cursorignore`, `.geminiignore`,
 ## 빠른 시작
 
 ```bash
-npx aiignore init
+npx aiignore-cli init
 ```
 
 또는 전역 설치:

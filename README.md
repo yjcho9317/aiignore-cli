@@ -7,7 +7,7 @@ Every AI tool has a different ignore mechanism — `.cursorignore`, `.geminiigno
 ## Quick Start
 
 ```bash
-npx aiignore init
+npx aiignore-cli init
 ```
 
 Or install globally:
