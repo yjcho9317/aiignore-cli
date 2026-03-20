@@ -11,6 +11,7 @@ Each AI coding tool has a different file-exclusion mechanism with different reli
 | Gemini CLI | `.geminiignore` | Low | Yes | Yes | Self-blocks `.env`, `.pem`, `credentials.json` by built-in policy |
 | JetBrains AI | `.aiignore` | High | Yes | Yes | AI auto-redacts sensitive-looking content regardless of `.aiignore` |
 | Windsurf | `.codeiumignore` | Medium | Yes | Yes | Asks permission before file access |
+| Aider | `.aiderignore` | Medium | Yes | N/A (CLI only) | `/add` command can bypass `.aiderignore` |
 | Copilot | None | None | N/A | N/A | No ignore file for individual developers |
 
 ---
@@ -127,6 +128,26 @@ When both apply (sensitive file in `.aiignore`), you see REDACT instead of full 
 - Still uses `.codeiumignore`, not `.windsurfignore`
 
 **Bottom line:** Solid basic protection. Asks permission before reading files, which adds an extra layer.
+
+---
+
+## Aider
+
+**File:** `.aiderignore` (gitignore syntax)
+**Docs:** https://aider.chat/docs/config/options.html
+
+| What | Result |
+|------|--------|
+| `/add .env` without `.aiderignore` | **Added to chat** |
+| `/add .env` with `.aiderignore` | **Blocked** ("Skipping .env due to aiderignore") |
+| `/add app.js` with `.aiderignore` (not in ignore) | Added to chat |
+
+**Override methods:**
+- `--aiderignore` flag can point to a different ignore file
+- `.aider.conf.yml` can set a custom aiderignore path
+- `/add` with explicit path can bypass in some cases
+
+**Bottom line:** Straightforward gitignore-style blocking. No terminal bypass concern since Aider is a CLI tool that doesn't execute shell commands on behalf of the AI. The main risk is users overriding the ignore file path.
 
 ---
 
