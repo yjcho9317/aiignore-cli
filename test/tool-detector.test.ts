@@ -59,6 +59,7 @@ describe('detectTools', () => {
     expect(ALL_TOOL_IDS).toContain('geminiCli');
     expect(ALL_TOOL_IDS).toContain('jetbrains');
     expect(ALL_TOOL_IDS).toContain('windsurf');
-    expect(ALL_TOOL_IDS).toHaveLength(6);
+    expect(ALL_TOOL_IDS).toContain('aider');
+    expect(ALL_TOOL_IDS).toHaveLength(7);
   });
 });

@@ -10,6 +10,7 @@ export const TOOL_ALIASES: Record<string, string> = {
   jb: 'jetbrains',
   windsurf: 'windsurf',
   codeium: 'windsurf',
+  aider: 'aider',
 };
 
 export function resolveToolId(input: string): string | undefined {

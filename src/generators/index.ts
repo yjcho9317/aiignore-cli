@@ -4,6 +4,7 @@ import { generateCopilotGuide } from './copilot-guide.js';
 import { generateGeminiignore } from './geminiignore.js';
 import { generateCodeiumignore } from './codeiumignore.js';
 import { generateAiignoreJB } from './aiignore-jb.js';
+import { generateAiderignore } from './aiderignore.js';
 
 export type WriteMode = 'default' | 'force' | 'append';
 
@@ -25,6 +26,7 @@ const generators: Record<string, GeneratorFn> = {
   geminiCli: generateGeminiignore,
   jetbrains: generateAiignoreJB,
   windsurf: generateCodeiumignore,
+  aider: generateAiderignore,
 };
 
 export function runGenerators(

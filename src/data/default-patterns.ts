@@ -19,6 +19,8 @@ export const DEFAULT_PATTERNS = {
     '*.pfx',
     '*.jks',
     '*.keystore',
+    '*.gpg',
+    '*.asc',
   ],
   ssh: [
     '.ssh/',
@@ -33,12 +35,26 @@ export const DEFAULT_PATTERNS = {
     '.azure/',
     'gcloud/',
   ],
+  infrastructure: [
+    'terraform.tfstate',
+    'terraform.tfvars',
+    '.docker/config.json',
+    '.kube/config',
+    'kubeconfig',
+  ],
+  registry: [
+    '.npmrc',
+    '.pypirc',
+    '.netrc',
+    '*.htpasswd',
+  ],
   app: [
     'config/secrets.yml',
     'config/master.key',
     '.secret',
     'vault.json',
     '*.secrets',
+    'wp-config.php',
   ],
   database: [
     '*.sqlite',

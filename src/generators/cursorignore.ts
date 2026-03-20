@@ -2,41 +2,52 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { GeneratorResult, WriteMode } from './index.js';
 
-export function generateCursorignore(
-  projectDir: string,
-  patterns: string[],
-  mode: WriteMode,
-): GeneratorResult {
-  const filePath = path.join(projectDir, '.cursorignore');
-  const exists = fs.existsSync(filePath);
+export function createIgnoreGenerator(config: {
+  toolId: string;
+  toolName: string;
+  fileName: string;
+  warnings?: string[];
+  message: string;
+}): (projectDir: string, patterns: string[], mode: WriteMode) => GeneratorResult {
+  return (projectDir, patterns, mode) => {
+    const filePath = path.join(projectDir, config.fileName);
+    const exists = fs.existsSync(filePath);
 
-  if (exists && mode === 'default') {
-    return skipResult('cursor', 'Cursor', '.cursorignore');
-  }
+    if (exists && mode === 'default') {
+      return skipResult(config.toolId, config.toolName, config.fileName);
+    }
 
-  if (exists && mode === 'append') {
-    const added = appendPatterns(filePath, patterns);
+    if (exists && mode === 'append') {
+      const added = appendPatterns(filePath, patterns);
+      return {
+        toolId: config.toolId, toolName: config.toolName, filePath: config.fileName,
+        created: added > 0, skipped: added === 0,
+        message: added > 0 ? `${added} pattern(s) added` : 'No new patterns to add',
+      };
+    }
+
+    const content = buildIgnoreFile(config.toolName, config.fileName, patterns, config.warnings);
+    fs.writeFileSync(filePath, content, 'utf-8');
+
     return {
-      toolId: 'cursor', toolName: 'Cursor', filePath: '.cursorignore',
-      created: added > 0, skipped: added === 0,
-      message: added > 0 ? `${added} pattern(s) added` : 'No new patterns to add',
+      toolId: config.toolId, toolName: config.toolName, filePath: config.fileName,
+      created: true, skipped: false,
+      message: config.message,
     };
-  }
+  };
+}
 
-  const content = buildIgnoreFile('Cursor', '.cursorignore', patterns, [
+export const generateCursorignore = createIgnoreGenerator({
+  toolId: 'cursor',
+  toolName: 'Cursor',
+  fileName: '.cursorignore',
+  warnings: [
     'NOTE: Cursor treats .cursorignore as "best-effort" — not guaranteed.',
     'CVE-2025-59944: case-sensitivity bypass known.',
     'CVE-2025-64110: agent rewrite bypass known.',
-  ]);
-
-  fs.writeFileSync(filePath, content, 'utf-8');
-
-  return {
-    toolId: 'cursor', toolName: 'Cursor', filePath: '.cursorignore',
-    created: true, skipped: false,
-    message: '"best-effort" — not guaranteed',
-  };
-}
+  ],
+  message: '"best-effort" — not guaranteed',
+});
 
 export function buildIgnoreFile(
   toolName: string,
@@ -60,45 +71,93 @@ export function buildIgnoreFile(
 
   lines.push('');
 
-  lines.push('# Secrets & Environment');
-  lines.push(...patterns.filter((p) => p.includes('.env') || p.includes('secret') || p.includes('credential') || p.includes('token')));
-  lines.push('');
+  const categorized = categorizePatterns(patterns);
 
-  lines.push('# Keys & Certificates');
-  lines.push(...patterns.filter((p) =>
-    p.includes('.pem') || p.includes('.key') || p.includes('.p12') ||
-    p.includes('.pfx') || p.includes('.jks') || p.includes('.keystore') ||
-    p.includes('.crt') || p.includes('.cer') || p.includes('.ca-bundle'),
-  ));
-  lines.push('');
-
-  lines.push('# SSH');
-  lines.push(...patterns.filter((p) =>
-    p.includes('ssh') || p.includes('id_rsa') || p.includes('id_ed25519') ||
-    p.includes('id_ecdsa') || p.includes('known_hosts'),
-  ));
-  lines.push('');
-
-  lines.push('# Cloud Providers');
-  lines.push(...patterns.filter((p) =>
-    p.includes('.aws') || p.includes('.gcp') || p.includes('.azure') || p.includes('gcloud'),
-  ));
-  lines.push('');
-
-  lines.push('# Application Secrets & Database');
-  lines.push(...patterns.filter((p) =>
-    p.includes('vault') || p.includes('master.key') || p.includes('.secret') ||
-    p.includes('.sqlite') || p.includes('.db') || p.includes('dump.sql') ||
-    p.includes('.dump') || p.includes('secrets.yml'),
-  ));
-  lines.push('');
+  for (const { name, items } of categorized) {
+    if (items.length === 0) continue;
+    lines.push(`# ${name}`);
+    lines.push(...items);
+    lines.push('');
+  }
 
   return lines.join('\n');
 }
 
+const PATTERN_CATEGORIES: { name: string; test: (p: string) => boolean }[] = [
+  {
+    name: 'Secrets & Environment',
+    test: (p) => p.includes('.env') || p.includes('secret') || p.includes('credential') || p.includes('token') || p.includes('password'),
+  },
+  {
+    name: 'Keys & Certificates',
+    test: (p) =>
+      p.includes('.pem') || p.includes('.key') || p.includes('.p12') ||
+      p.includes('.pfx') || p.includes('.jks') || p.includes('.keystore') ||
+      p.includes('.gpg') || p.includes('.asc') ||
+      p.includes('.crt') || p.includes('.cer') || p.includes('.ca-bundle'),
+  },
+  {
+    name: 'SSH',
+    test: (p) =>
+      p.includes('ssh') || p.includes('id_rsa') || p.includes('id_ed25519') ||
+      p.includes('id_ecdsa') || p.includes('known_hosts'),
+  },
+  {
+    name: 'Cloud & Infrastructure',
+    test: (p) =>
+      p.includes('.aws') || p.includes('.gcp') || p.includes('.azure') || p.includes('gcloud') ||
+      p.includes('terraform') || p.includes('.docker/') || p.includes('kube'),
+  },
+  {
+    name: 'Registry & Auth',
+    test: (p) =>
+      p.includes('.npmrc') || p.includes('.pypirc') || p.includes('.netrc') ||
+      p.includes('htpasswd') || p.includes('wp-config'),
+  },
+  {
+    name: 'Application Secrets & Database',
+    test: (p) =>
+      p.includes('vault') || p.includes('master.key') ||
+      p.includes('.sqlite') || p.includes('.db') || p.includes('dump.sql') ||
+      p.includes('.dump') || p.includes('secrets.yml'),
+  },
+];
+
+function categorizePatterns(patterns: string[]): { name: string; items: string[] }[] {
+  const result = PATTERN_CATEGORIES.map((c) => ({ name: c.name, items: [] as string[] }));
+  const other: string[] = [];
+  const assigned = new Set<string>();
+
+  for (const pattern of patterns) {
+    if (assigned.has(pattern)) continue;
+
+    let matched = false;
+    for (let i = 0; i < PATTERN_CATEGORIES.length; i++) {
+      if (PATTERN_CATEGORIES[i].test(pattern)) {
+        result[i].items.push(pattern);
+        assigned.add(pattern);
+        matched = true;
+        break;
+      }
+    }
+
+    if (!matched) {
+      other.push(pattern);
+      assigned.add(pattern);
+    }
+  }
+
+  if (other.length > 0) {
+    result.push({ name: 'Other', items: other });
+  }
+
+  return result;
+}
+
 export function appendPatterns(filePath: string, patterns: string[]): number {
   const existing = fs.readFileSync(filePath, 'utf-8');
-  const newPatterns = patterns.filter((p) => !existing.includes(p));
+  const existingLines = new Set(existing.split('\n').map((l) => l.trim()));
+  const newPatterns = patterns.filter((p) => !existingLines.has(p));
   if (newPatterns.length === 0) return 0;
 
   const addition = '\n# Added by aiignore\n' + newPatterns.join('\n') + '\n';

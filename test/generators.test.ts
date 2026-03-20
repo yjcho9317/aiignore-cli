@@ -23,7 +23,7 @@ describe('buildIgnoreFile', () => {
     expect(content).toContain('# Secrets & Environment');
     expect(content).toContain('# Keys & Certificates');
     expect(content).toContain('# SSH');
-    expect(content).toContain('# Cloud Providers');
+    expect(content).toContain('# Cloud & Infrastructure');
     expect(content).toContain('# Application Secrets & Database');
   });
 

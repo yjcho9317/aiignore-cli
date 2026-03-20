@@ -5,6 +5,7 @@ import { detectTools, ALL_TOOL_IDS } from '../scanners/tool-detector.js';
 import { runGenerators } from '../generators/index.js';
 import { TOOL_STATUS } from '../data/tool-status.js';
 import { resolveToolIds } from '../utils/aliases.js';
+import { loadConfig } from '../utils/config.js';
 import { logger } from '../utils/logger.js';
 
 export interface InitOptions {
@@ -20,10 +21,19 @@ export async function initCommand(options: InitOptions): Promise<void> {
   const projectDir = process.cwd();
   const log = options.quiet ? { dim: noop, info: noop, warn: noop, success: noop, heading: noop } : logger;
 
+  const config = loadConfig(projectDir);
+
   const spinner = options.quiet ? null : ora('Scanning project for sensitive files...').start();
   const scanResult = await scanForSecrets(projectDir);
+
+  if (config.extraPatterns.length > 0) {
+    const merged = [...new Set([...scanResult.patterns, ...config.extraPatterns])];
+    scanResult.patterns = merged;
+  }
+
   spinner?.succeed(
-    `Found ${scanResult.foundFiles.length} sensitive file(s), ${scanResult.patterns.length} patterns`,
+    `Found ${scanResult.foundFiles.length} sensitive file(s), ${scanResult.patterns.length} patterns` +
+    (config.extraPatterns.length > 0 ? ` (${config.extraPatterns.length} from .aiignorerc)` : ''),
   );
 
   if (scanResult.foundFiles.length > 0 && !options.quiet) {
@@ -35,7 +45,10 @@ export async function initCommand(options: InitOptions): Promise<void> {
   const detectedTools = detectTools(projectDir);
   const activeTools = detectedTools.filter((t) => t.detected);
 
+  let targetToolIds: string[];
+
   if (options.all) {
+    targetToolIds = ALL_TOOL_IDS;
     spinnerTools?.succeed(`Using all ${ALL_TOOL_IDS.length} supported tools`);
   } else if (options.only) {
     const { ids, invalid } = resolveToolIds(options.only);
@@ -44,25 +57,26 @@ export async function initCommand(options: InitOptions): Promise<void> {
       logger.info('Run `aiignore list` to see available tools.');
       process.exit(1);
     }
+    targetToolIds = ids;
     spinnerTools?.succeed(`Targeting: ${ids.length} tool(s)`);
+  } else if (config.toolIds) {
+    targetToolIds = config.toolIds;
+    spinnerTools?.succeed(`Using ${config.toolIds.length} tool(s) from .aiignorerc`);
   } else if (activeTools.length > 0) {
+    targetToolIds = activeTools.map((t) => t.id);
     spinnerTools?.succeed(
       `Detected ${activeTools.length} tool(s): ${activeTools.map((t) => t.name).join(', ')}`,
     );
   } else {
     spinnerTools?.warn('No AI tools detected');
-    log.info('Use --all to generate for all tools, or --only to pick specific ones.');
+    if (scanResult.foundFiles.length > 0) {
+      log.warn(`${scanResult.foundFiles.length} sensitive file(s) found but no AI tools detected.`);
+      log.info('Run `aiignore init --all` to protect against all AI tools.');
+    } else {
+      log.info('Use --all to generate for all tools, or --only to pick specific ones.');
+    }
     log.info('Run `aiignore list` to see available tools.');
     return;
-  }
-
-  let targetToolIds: string[];
-  if (options.all) {
-    targetToolIds = ALL_TOOL_IDS;
-  } else if (options.only) {
-    targetToolIds = resolveToolIds(options.only).ids;
-  } else {
-    targetToolIds = activeTools.map((t) => t.id);
   }
 
   if (options.dryRun) {

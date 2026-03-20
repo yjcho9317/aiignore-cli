@@ -33,6 +33,10 @@ const TOOL_SIGNALS: Record<string, { name: string; paths: string[] }> = {
     name: 'Windsurf/Codeium',
     paths: ['.codeiumignore', '.windsurf/'],
   },
+  aider: {
+    name: 'Aider',
+    paths: ['.aider.conf.yml', '.aiderignore', '.aider/'],
+  },
 };
 
 export function detectTools(projectDir: string): DetectedTool[] {

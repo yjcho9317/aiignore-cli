@@ -85,4 +85,15 @@ export const TOOL_STATUS: Record<string, ToolIgnoreStatus> = {
     recommendedApproach: '.codeiumignore file with gitignore syntax (avoid negation)',
     source: 'https://docs.windsurf.com/context-awareness/windsurf-ignore',
   },
+  aider: {
+    tool: 'Aider',
+    ignoreFile: '.aiderignore',
+    reliability: 'medium',
+    knownLimitations: [
+      '--aiderignore flag or .aider.conf.yml can override the ignore file path',
+      'Explicit /add command can bypass .aiderignore',
+    ],
+    recommendedApproach: '.aiderignore file with gitignore syntax',
+    source: 'https://aider.chat/docs/config/options.html',
+  },
 };

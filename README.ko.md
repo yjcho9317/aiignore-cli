@@ -2,7 +2,7 @@
 
 AI 코딩 도구로부터 민감 파일을 보호하는 CLI.
 
-AI 도구마다 ignore 방식이 다르다 — `.cursorignore`, `.geminiignore`, `.codeiumignore`, `.claude/settings.json`, `.aiignore` — 포맷도 다르고 알려지지 않은 우회 버그도 있다. `aiignore`는 프로젝트를 스캔하고, 사용 중인 도구를 감지하고, 각 도구에 맞는 설정 파일을 자동 생성한다.
+AI 도구마다 ignore 방식이 다르다 — `.cursorignore`, `.geminiignore`, `.codeiumignore`, `.aiderignore`, `.claude/settings.json`, `.aiignore` — 포맷도 다르고 알려지지 않은 우회 버그도 있다. `aiignore`는 프로젝트를 스캔하고, 사용 중인 도구를 감지하고, 각 도구에 맞는 설정 파일을 자동 생성한다.
 
 ## 빠른 시작
 
@@ -52,7 +52,7 @@ aiignore init -q                     # 무출력 모드
 
 aiignore verify                      # 보호 상태 테이블
 aiignore verify --ci                 # 미보호 시 exit 1
-aiignore verify --strict             # unreliable 이상이면 exit 1
+aiignore verify --strict             # best-effort 아니면 exit 1
 aiignore verify --json               # JSON 출력
 
 aiignore list                        # 지원 도구 및 별칭 목록
@@ -68,6 +68,7 @@ aiignore list                        # 지원 도구 및 별칭 목록
 | Gemini CLI | `.geminiignore` | 낮음 | 부정 패턴 깨짐, `.env`/`.pem` 자체 차단 정책 있음 |
 | JetBrains AI | `.aiignore` | 높음 | 가장 안정적. 민감 파일명은 AI가 자체 REDACT |
 | Windsurf | `.codeiumignore` | 중간 | 부정 패턴이 `.gitignore` 무시 불가 |
+| Aider | `.aiderignore` | 중간 | `--aiderignore` 플래그나 `/add`로 우회 가능 |
 
 ## 보호 대상
 
@@ -77,10 +78,12 @@ aiignore list                        # 지원 도구 및 별칭 목록
 |------|------|
 | 환경변수 | `.env`, `.env.*`, `.env.local` |
 | 인증정보 | `credentials.json`, `service-account*.json`, `*secret*`, `token.json` |
-| 키 | `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks` |
+| 키 | `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.gpg`, `*.asc` |
 | SSH | `.ssh/`, `id_rsa*`, `id_ed25519*`, `id_ecdsa*` |
 | 클라우드 | `.aws/`, `.gcp/`, `.azure/`, `gcloud/` |
-| 앱 시크릿 | `config/secrets.yml`, `config/master.key`, `vault.json` |
+| 인프라 | `terraform.tfstate`, `terraform.tfvars`, `.docker/config.json`, `.kube/config` |
+| 레지스트리 & 인증 | `.npmrc`, `.pypirc`, `.netrc`, `*.htpasswd` |
+| 앱 시크릿 | `config/secrets.yml`, `config/master.key`, `vault.json`, `wp-config.php` |
 | 데이터베이스 | `*.sqlite`, `*.db`, `dump.sql` |
 | 인증서 | `*.crt`, `*.cer`, `*.ca-bundle` |
 
@@ -95,9 +98,26 @@ copilot                    -> GitHub Copilot
 gemini / gemini-cli        -> Gemini CLI
 jetbrains / jb             -> JetBrains AI
 windsurf / codeium         -> Windsurf/Codeium
+aider                      -> Aider
 ```
 
 `aiignore list`로 전체 목록 확인 가능.
+
+## 프로젝트 설정 (`.aiignorerc`)
+
+프로젝트 루트에 `.aiignorerc` 파일을 만들면 동작을 커스터마이징할 수 있다:
+
+```json
+{
+  "tools": ["cursor", "claude", "jetbrains"],
+  "extraPatterns": ["internal/", "*.staging.env"]
+}
+```
+
+- **`tools`**: 자동 감지 대신 고정할 도구 목록. `--only`와 같은 별칭 사용 가능.
+- **`extraPatterns`**: 생성되는 모든 ignore 파일에 추가할 패턴.
+
+두 필드 모두 선택 사항. `--all`이나 `--only` 플래그가 `tools` 설정보다 우선한다.
 
 ## 한계
 

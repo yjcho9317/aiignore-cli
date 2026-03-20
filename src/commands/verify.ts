@@ -10,9 +10,10 @@ export interface VerifyOptions {
   ci?: boolean;
   json?: boolean;
   strict?: boolean;
+  quiet?: boolean;
 }
 
-type Status = 'best-effort' | 'unreliable' | 'none';
+type Status = 'best-effort' | 'configured' | 'none';
 
 interface VerifyResult {
   tool: string;
@@ -26,8 +27,9 @@ interface VerifyResult {
 
 const REQUIRED_PATTERNS = ['.env', '*.pem', '*.key', 'credentials.json'];
 
-export async function verifyCommand(options: VerifyOptions): Promise<void> {
+export function verifyCommand(options: VerifyOptions): void {
   const projectDir = process.cwd();
+  const log = options.quiet ? { dim: noop, info: noop, warn: noop, success: noop, heading: noop } : logger;
   const detectedTools = detectTools(projectDir);
   const results: VerifyResult[] = [];
 
@@ -48,7 +50,7 @@ export async function verifyCommand(options: VerifyOptions): Promise<void> {
     } else if (status.reliability === 'high') {
       protectionStatus = 'best-effort';
     } else {
-      protectionStatus = 'unreliable';
+      protectionStatus = 'configured';
     }
 
     results.push({
@@ -68,61 +70,67 @@ export async function verifyCommand(options: VerifyOptions): Promise<void> {
   }
 
   if (results.length === 0) {
-    logger.warn('No AI tools detected in this project.');
-    logger.info('Run `aiignore init --all` to generate ignore files for all tools.');
+    log.warn('No AI tools detected in this project.');
+    log.info('Run `aiignore init --all` to generate ignore files for all tools.');
     return;
   }
 
-  logger.heading('AI Tool Protection Status');
-  console.log();
+  log.heading('AI Tool Protection Status');
+  if (!options.quiet) console.log();
 
   const statusLabel = (s: Status) => {
     switch (s) {
       case 'best-effort': return chalk.green('[ok] Best-effort');
-      case 'unreliable': return chalk.yellow('[!] Unreliable');
+      case 'configured': return chalk.yellow('[~] Configured (tool has known limits)');
       case 'none': return chalk.red('[x] None');
       default: return s;
     }
   };
 
-  for (const r of results) {
-    console.log(`  ${chalk.bold(r.tool.padEnd(20))} ${statusLabel(r.status)}`);
-    if (r.exists) {
-      logger.dim(`    File: ${r.ignoreFile}`);
-    } else if (r.ignoreFile !== 'none') {
-      logger.dim(`    Missing: ${r.ignoreFile}`);
-    }
-    if (r.missingPatterns.length > 0) {
-      logger.warn(`    Missing patterns: ${r.missingPatterns.join(', ')}`);
-    }
-    if (r.limitations.length > 0 && !options.ci) {
-      logger.dim(`    Limitation: ${r.limitations[0]}`);
+  if (!options.quiet) {
+    for (const r of results) {
+      console.log(`  ${chalk.bold(r.tool.padEnd(20))} ${statusLabel(r.status)}`);
+      if (r.exists) {
+        logger.dim(`    File: ${r.ignoreFile}`);
+      } else if (r.ignoreFile !== 'none') {
+        logger.dim(`    Missing: ${r.ignoreFile}`);
+      }
+      if (r.missingPatterns.length > 0) {
+        logger.warn(`    Missing patterns: ${r.missingPatterns.join(', ')}`);
+      }
+      if (r.limitations.length > 0 && !options.ci) {
+        logger.dim(`    Limitation: ${r.limitations[0]}`);
+      }
     }
   }
 
-  const bestEffortCount = results.filter((r) => r.status === 'best-effort').length;
-  const unreliableCount = results.filter((r) => r.status === 'unreliable').length;
   const noneCount = results.filter((r) => r.status === 'none').length;
 
-  console.log();
-  logger.info(
-    `Coverage: ${bestEffortCount} best-effort | ${unreliableCount} unreliable | ${noneCount} none`,
-  );
-
-  if (noneCount > 0 || unreliableCount > 0) {
+  if (!options.quiet) {
+    const bestEffortCount = results.filter((r) => r.status === 'best-effort').length;
+    const configuredCount = results.filter((r) => r.status === 'configured').length;
     console.log();
-    logger.info('Run `aiignore init` to improve protection.');
+    logger.info(
+      `Coverage: ${bestEffortCount} best-effort | ${configuredCount} configured | ${noneCount} unprotected`,
+    );
+
+    if (noneCount > 0) {
+      console.log();
+      logger.info('Run `aiignore init` to improve protection.');
+    }
   }
 
-  // --ci: fail on none
-  // --strict: fail on none OR unreliable
+  // --ci: fail if any tool has no ignore file
+  // --strict: fail if any tool isn't best-effort
   if (options.ci && noneCount > 0) {
     process.exit(1);
   }
-  if (options.strict && (noneCount > 0 || unreliableCount > 0)) {
+  if (options.strict && results.some((r) => r.status !== 'best-effort')) {
     process.exit(1);
   }
 }
+
+function noop(_msg: string) {}
 
 function checkIgnoreExists(projectDir: string, toolId: string, ignoreFile: string): boolean {
   if (ignoreFile === 'none') return false;

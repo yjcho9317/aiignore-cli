@@ -11,24 +11,19 @@ export interface ScanResult {
 export async function scanForSecrets(projectDir: string): Promise<ScanResult> {
   const defaultPatterns = getAllPatterns();
 
-  const foundFiles: string[] = [];
-
-  for (const pattern of defaultPatterns) {
-    const matches = await fg(pattern, {
-      cwd: projectDir,
-      dot: true,
-      onlyFiles: true,
-      ignore: ['node_modules/**', '.git/**'],
-      suppressErrors: true,
-    });
-    foundFiles.push(...matches);
-  }
+  const foundFiles = await fg(defaultPatterns, {
+    cwd: projectDir,
+    dot: true,
+    onlyFiles: true,
+    ignore: ['node_modules/**', '.git/**'],
+    suppressErrors: true,
+  });
 
   const gitignorePatterns = readGitignorePatterns(projectDir);
   const allPatterns = [...new Set([...defaultPatterns, ...gitignorePatterns])];
 
   return {
-    foundFiles: [...new Set(foundFiles)],
+    foundFiles,
     patterns: allPatterns,
   };
 }
@@ -62,6 +57,9 @@ function isSecurityPattern(pattern: string): boolean {
     '.ssh', '.aws', '.gcp', '.azure',
     'id_rsa', 'id_ed25519', 'id_ecdsa',
     'vault', 'master.key', '.keystore',
+    '.gpg', '.asc', 'terraform', '.tfstate', '.tfvars',
+    '.npmrc', '.pypirc', '.netrc', 'htpasswd',
+    '.docker', 'kube', 'wp-config',
   ];
 
   const lower = pattern.toLowerCase();

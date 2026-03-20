@@ -1,14 +1,18 @@
 import { Command } from 'commander';
+import { createRequire } from 'node:module';
 import { initCommand } from './commands/init.js';
 import { verifyCommand } from './commands/verify.js';
 import { listCommand } from './commands/list.js';
+
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json');
 
 const program = new Command();
 
 program
   .name('aiignore')
   .description('Protect your secrets from AI coding tools')
-  .version('1.0.2');
+  .version(version);
 
 program
   .command('init', { isDefault: true })

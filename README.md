@@ -2,7 +2,7 @@
 
 One command to protect your secrets from all AI coding tools.
 
-Every AI tool has a different ignore mechanism — `.cursorignore`, `.geminiignore`, `.codeiumignore`, `.claude/settings.json`, `.aiignore` — each with its own quirks and undocumented bypass bugs. `aiignore` scans your project, detects which tools you use, and generates the right config for each one.
+Every AI tool has a different ignore mechanism — `.cursorignore`, `.geminiignore`, `.codeiumignore`, `.aiderignore`, `.claude/settings.json`, `.aiignore` — each with its own quirks and undocumented bypass bugs. `aiignore` scans your project, detects which tools you use, and generates the right config for each one.
 
 ## Quick Start
 
@@ -52,7 +52,7 @@ aiignore init -q                     # quiet mode (no output)
 
 aiignore verify                      # protection status table
 aiignore verify --ci                 # exit 1 if unprotected
-aiignore verify --strict             # exit 1 if any tool is unreliable
+aiignore verify --strict             # exit 1 if any tool isn't best-effort
 aiignore verify --json               # machine-readable output
 
 aiignore list                        # show supported tools and aliases
@@ -68,6 +68,7 @@ aiignore list                        # show supported tools and aliases
 | Gemini CLI | `.geminiignore` | Low | negation patterns broken, self-blocks `.env`/`.pem` |
 | JetBrains AI | `.aiignore` | High | most reliable; AI redacts sensitive filenames |
 | Windsurf | `.codeiumignore` | Medium | negation can't override `.gitignore` |
+| Aider | `.aiderignore` | Medium | `--aiderignore` flag or `/add` can bypass |
 
 ## What Gets Protected
 
@@ -77,10 +78,12 @@ Patterns are sourced from built-in defaults + security-related entries in your `
 |----------|----------|
 | Environment | `.env`, `.env.*`, `.env.local` |
 | Credentials | `credentials.json`, `service-account*.json`, `*secret*`, `token.json` |
-| Keys | `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks` |
+| Keys | `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.gpg`, `*.asc` |
 | SSH | `.ssh/`, `id_rsa*`, `id_ed25519*`, `id_ecdsa*` |
 | Cloud | `.aws/`, `.gcp/`, `.azure/`, `gcloud/` |
-| App Secrets | `config/secrets.yml`, `config/master.key`, `vault.json` |
+| Infrastructure | `terraform.tfstate`, `terraform.tfvars`, `.docker/config.json`, `.kube/config` |
+| Registry & Auth | `.npmrc`, `.pypirc`, `.netrc`, `*.htpasswd` |
+| App Secrets | `config/secrets.yml`, `config/master.key`, `vault.json`, `wp-config.php` |
 | Database | `*.sqlite`, `*.db`, `dump.sql` |
 | Certificates | `*.crt`, `*.cer`, `*.ca-bundle` |
 
@@ -95,9 +98,26 @@ copilot                    -> GitHub Copilot
 gemini / gemini-cli        -> Gemini CLI
 jetbrains / jb             -> JetBrains AI
 windsurf / codeium         -> Windsurf/Codeium
+aider                      -> Aider
 ```
 
 Run `aiignore list` to see all tools and aliases.
+
+## Project Configuration (`.aiignorerc`)
+
+Create a `.aiignorerc` file in your project root to customize behavior:
+
+```json
+{
+  "tools": ["cursor", "claude", "jetbrains"],
+  "extraPatterns": ["internal/", "*.staging.env"]
+}
+```
+
+- **`tools`**: Lock target tools instead of auto-detection. Accepts the same aliases as `--only`.
+- **`extraPatterns`**: Additional patterns merged into every generated ignore file.
+
+Both fields are optional. `--all` and `--only` flags override the `tools` config.
 
 ## Limitations
 
