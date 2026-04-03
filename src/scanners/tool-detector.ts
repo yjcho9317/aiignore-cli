@@ -37,6 +37,14 @@ const TOOL_SIGNALS: Record<string, { name: string; paths: string[] }> = {
     name: 'Aider',
     paths: ['.aider.conf.yml', '.aiderignore', '.aider/'],
   },
+  cline: {
+    name: 'Cline',
+    paths: ['.clineignore', '.cline/'],
+  },
+  roo: {
+    name: 'Roo Code',
+    paths: ['.rooignore', '.roo/'],
+  },
 };
 
 export function detectTools(projectDir: string): DetectedTool[] {

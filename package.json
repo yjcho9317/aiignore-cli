@@ -1,6 +1,6 @@
 {
   "name": "aiignore-cli",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "One command to protect your secrets from all AI coding tools",
   "type": "module",
   "main": "dist/index.js",
@@ -37,6 +37,10 @@
     "aiignore",
     "aider",
     "aiderignore",
+    "cline",
+    "clineignore",
+    "roo-code",
+    "rooignore",
     "dotfiles"
   ],
   "author": "yjcho9317",
@@ -52,6 +56,9 @@
     "commander": "^14.0.3",
     "fast-glob": "^3.3.3",
     "ora": "^9.3.0"
+  },
+  "overrides": {
+    "picomatch": ">=4.0.0"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

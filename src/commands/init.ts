@@ -33,7 +33,7 @@ export async function initCommand(options: InitOptions): Promise<void> {
 
   spinner?.succeed(
     `Found ${scanResult.foundFiles.length} sensitive file(s), ${scanResult.patterns.length} patterns` +
-    (config.extraPatterns.length > 0 ? ` (${config.extraPatterns.length} from .aiignorerc)` : ''),
+    (config.extraPatterns.length > 0 ? ` (${config.extraPatterns.length} from config)` : ''),
   );
 
   if (scanResult.foundFiles.length > 0 && !options.quiet) {
@@ -61,7 +61,7 @@ export async function initCommand(options: InitOptions): Promise<void> {
     spinnerTools?.succeed(`Targeting: ${ids.length} tool(s)`);
   } else if (config.toolIds) {
     targetToolIds = config.toolIds;
-    spinnerTools?.succeed(`Using ${config.toolIds.length} tool(s) from .aiignorerc`);
+    spinnerTools?.succeed(`Using ${config.toolIds.length} tool(s) from config`);
   } else if (activeTools.length > 0) {
     targetToolIds = activeTools.map((t) => t.id);
     spinnerTools?.succeed(

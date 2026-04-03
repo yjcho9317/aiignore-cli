@@ -120,9 +120,9 @@ export function verifyCommand(options: VerifyOptions): void {
     }
   }
 
-  // --ci: fail if any tool has no ignore file
+  // --ci: fail if any tool has no ignore file or is missing critical patterns
   // --strict: fail if any tool isn't best-effort
-  if (options.ci && noneCount > 0) {
+  if (options.ci && (noneCount > 0 || results.some((r) => r.missingPatterns.length > 0))) {
     process.exit(1);
   }
   if (options.strict && results.some((r) => r.status !== 'best-effort')) {

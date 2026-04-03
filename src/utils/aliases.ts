@@ -11,6 +11,10 @@ export const TOOL_ALIASES: Record<string, string> = {
   windsurf: 'windsurf',
   codeium: 'windsurf',
   aider: 'aider',
+  cline: 'cline',
+  roo: 'roo',
+  'roo-code': 'roo',
+  roocode: 'roo',
 };
 
 export function resolveToolId(input: string): string | undefined {

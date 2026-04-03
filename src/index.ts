@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { initCommand } from './commands/init.js';
 import { verifyCommand } from './commands/verify.js';
 import { listCommand } from './commands/list.js';
+import { configCommand } from './commands/config.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
@@ -29,7 +30,7 @@ program
   .command('verify')
   .description('Check protection status for detected AI tools')
   .option('--ci', 'CI mode: exit code 1 if unprotected')
-  .option('--strict', 'Strict mode: exit code 1 if any tool is unreliable or unprotected')
+  .option('--strict', 'Strict mode: exit code 1 if any tool is not best-effort')
   .option('--json', 'Output results as JSON')
   .option('-q, --quiet', 'Suppress non-essential output')
   .action(verifyCommand);
@@ -38,5 +39,11 @@ program
   .command('list')
   .description('Show all supported AI tools and aliases')
   .action(listCommand);
+
+program
+  .command('config')
+  .description('Show effective configuration and config file paths')
+  .argument('[sub]', '"path" to print global config path')
+  .action(configCommand);
 
 program.parse();

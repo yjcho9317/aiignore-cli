@@ -2,7 +2,7 @@
 
 One command to protect your secrets from all AI coding tools.
 
-Every AI tool has a different ignore mechanism — `.cursorignore`, `.geminiignore`, `.codeiumignore`, `.aiderignore`, `.claude/settings.json`, `.aiignore` — each with its own quirks and undocumented bypass bugs. `aiignore` scans your project, detects which tools you use, and generates the right config for each one.
+Every AI tool has a different ignore mechanism — `.cursorignore`, `.geminiignore`, `.codeiumignore`, `.aiderignore`, `.clineignore`, `.rooignore`, `.claude/settings.json`, `.aiignore` — each with its own quirks and undocumented bypass bugs. `aiignore` scans your project, detects which tools you use, and generates the right config for each one.
 
 ## Quick Start
 
@@ -56,6 +56,9 @@ aiignore verify --strict             # exit 1 if any tool isn't best-effort
 aiignore verify --json               # machine-readable output
 
 aiignore list                        # show supported tools and aliases
+
+aiignore config                      # show effective configuration
+aiignore config path                 # print global config file path
 ```
 
 ## Tool Support
@@ -69,6 +72,8 @@ aiignore list                        # show supported tools and aliases
 | JetBrains AI | `.aiignore` | High | most reliable; AI redacts sensitive filenames |
 | Windsurf | `.codeiumignore` | Medium | negation can't override `.gitignore` |
 | Aider | `.aiderignore` | Medium | `--aiderignore` flag or `/add` can bypass |
+| Cline | `.clineignore` | Medium | controls context loading, not terminal execution |
+| Roo Code | `.rooignore` | Medium | terminal commands may bypass restrictions |
 
 ## What Gets Protected
 
@@ -99,6 +104,8 @@ gemini / gemini-cli        -> Gemini CLI
 jetbrains / jb             -> JetBrains AI
 windsurf / codeium         -> Windsurf/Codeium
 aider                      -> Aider
+cline                      -> Cline
+roo / roo-code             -> Roo Code
 ```
 
 Run `aiignore list` to see all tools and aliases.
@@ -118,6 +125,18 @@ Create a `.aiignorerc` file in your project root to customize behavior:
 - **`extraPatterns`**: Additional patterns merged into every generated ignore file.
 
 Both fields are optional. `--all` and `--only` flags override the `tools` config.
+
+## Global Configuration
+
+Create `~/.config/aiignore/config.json` to apply personal patterns across all projects:
+
+```json
+{
+  "extraPatterns": ["company-internal/", "*.corp-secret"]
+}
+```
+
+Global `extraPatterns` are merged with project-level patterns. Project-level `tools` override global `tools`. Run `aiignore config` to see the effective configuration.
 
 ## Limitations
 

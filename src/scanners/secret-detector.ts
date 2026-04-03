@@ -40,7 +40,7 @@ function readGitignorePatterns(projectDir: string): string[] {
 
   for (const line of content.split('\n')) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
+    if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('!')) continue;
 
     if (isSecurityPattern(trimmed)) {
       securityRelated.push(trimmed);

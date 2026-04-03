@@ -96,4 +96,26 @@ export const TOOL_STATUS: Record<string, ToolIgnoreStatus> = {
     recommendedApproach: '.aiderignore file with gitignore syntax',
     source: 'https://aider.chat/docs/config/options.html',
   },
+  cline: {
+    tool: 'Cline',
+    ignoreFile: '.clineignore',
+    reliability: 'medium',
+    knownLimitations: [
+      'Only controls file context loading, not terminal command execution',
+      'Files can still be referenced if user explicitly adds them',
+    ],
+    recommendedApproach: '.clineignore file with gitignore syntax',
+    source: 'https://docs.cline.bot/customization/clineignore',
+  },
+  roo: {
+    tool: 'Roo Code',
+    ignoreFile: '.rooignore',
+    reliability: 'medium',
+    knownLimitations: [
+      'Affects tool access and context mentions',
+      'Terminal commands may bypass .rooignore restrictions',
+    ],
+    recommendedApproach: '.rooignore file with gitignore syntax',
+    source: 'https://docs.roocode.com/features/rooignore',
+  },
 };

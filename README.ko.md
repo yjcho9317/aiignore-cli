@@ -2,7 +2,7 @@
 
 AI 코딩 도구로부터 민감 파일을 보호하는 CLI.
 
-AI 도구마다 ignore 방식이 다르다 — `.cursorignore`, `.geminiignore`, `.codeiumignore`, `.aiderignore`, `.claude/settings.json`, `.aiignore` — 포맷도 다르고 알려지지 않은 우회 버그도 있다. `aiignore`는 프로젝트를 스캔하고, 사용 중인 도구를 감지하고, 각 도구에 맞는 설정 파일을 자동 생성한다.
+AI 도구마다 ignore 방식이 다르다 — `.cursorignore`, `.geminiignore`, `.codeiumignore`, `.aiderignore`, `.clineignore`, `.rooignore`, `.claude/settings.json`, `.aiignore` — 포맷도 다르고 알려지지 않은 우회 버그도 있다. `aiignore`는 프로젝트를 스캔하고, 사용 중인 도구를 감지하고, 각 도구에 맞는 설정 파일을 자동 생성한다.
 
 ## 빠른 시작
 
@@ -56,6 +56,9 @@ aiignore verify --strict             # best-effort 아니면 exit 1
 aiignore verify --json               # JSON 출력
 
 aiignore list                        # 지원 도구 및 별칭 목록
+
+aiignore config                      # 현재 적용된 설정 표시
+aiignore config path                 # 글로벌 설정 파일 경로 출력
 ```
 
 ## 지원 도구
@@ -69,6 +72,8 @@ aiignore list                        # 지원 도구 및 별칭 목록
 | JetBrains AI | `.aiignore` | 높음 | 가장 안정적. 민감 파일명은 AI가 자체 REDACT |
 | Windsurf | `.codeiumignore` | 중간 | 부정 패턴이 `.gitignore` 무시 불가 |
 | Aider | `.aiderignore` | 중간 | `--aiderignore` 플래그나 `/add`로 우회 가능 |
+| Cline | `.clineignore` | 중간 | 컨텍스트 로딩만 제어, 터미널 실행은 미차단 |
+| Roo Code | `.rooignore` | 중간 | 터미널 명령으로 우회 가능 |
 
 ## 보호 대상
 
@@ -99,6 +104,8 @@ gemini / gemini-cli        -> Gemini CLI
 jetbrains / jb             -> JetBrains AI
 windsurf / codeium         -> Windsurf/Codeium
 aider                      -> Aider
+cline                      -> Cline
+roo / roo-code             -> Roo Code
 ```
 
 `aiignore list`로 전체 목록 확인 가능.
@@ -118,6 +125,18 @@ aider                      -> Aider
 - **`extraPatterns`**: 생성되는 모든 ignore 파일에 추가할 패턴.
 
 두 필드 모두 선택 사항. `--all`이나 `--only` 플래그가 `tools` 설정보다 우선한다.
+
+## 글로벌 설정
+
+`~/.config/aiignore/config.json`을 만들면 모든 프로젝트에 개인 패턴을 적용할 수 있다:
+
+```json
+{
+  "extraPatterns": ["company-internal/", "*.corp-secret"]
+}
+```
+
+글로벌 `extraPatterns`는 프로젝트 설정과 합산된다. `tools`는 프로젝트 설정이 우선한다. `aiignore config`로 현재 적용된 설정을 확인할 수 있다.
 
 ## 한계
 

@@ -60,6 +60,8 @@ describe('detectTools', () => {
     expect(ALL_TOOL_IDS).toContain('jetbrains');
     expect(ALL_TOOL_IDS).toContain('windsurf');
     expect(ALL_TOOL_IDS).toContain('aider');
-    expect(ALL_TOOL_IDS).toHaveLength(7);
+    expect(ALL_TOOL_IDS).toContain('cline');
+    expect(ALL_TOOL_IDS).toContain('roo');
+    expect(ALL_TOOL_IDS).toHaveLength(9);
   });
 });

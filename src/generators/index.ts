@@ -5,6 +5,8 @@ import { generateGeminiignore } from './geminiignore.js';
 import { generateCodeiumignore } from './codeiumignore.js';
 import { generateAiignoreJB } from './aiignore-jb.js';
 import { generateAiderignore } from './aiderignore.js';
+import { generateClineignore } from './clineignore.js';
+import { generateRooignore } from './rooignore.js';
 
 export type WriteMode = 'default' | 'force' | 'append';
 
@@ -27,6 +29,8 @@ const generators: Record<string, GeneratorFn> = {
   jetbrains: generateAiignoreJB,
   windsurf: generateCodeiumignore,
   aider: generateAiderignore,
+  cline: generateClineignore,
+  roo: generateRooignore,
 };
 
 export function runGenerators(
