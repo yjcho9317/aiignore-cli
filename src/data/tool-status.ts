@@ -45,7 +45,7 @@ export const TOOL_STATUS: Record<string, ToolIgnoreStatus> = {
       'Individual developers have NO file-level protection',
     ],
     recommendedApproach: 'No file-level protection available for individual developers',
-    source: 'https://docs.github.com/en/copilot/managing-copilot/configuring-content-exclusions',
+    source: 'https://docs.github.com/en/copilot/how-tos/configure-content-exclusion/exclude-content-from-copilot',
   },
   geminiCli: {
     tool: 'Gemini CLI',
