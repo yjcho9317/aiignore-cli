@@ -154,7 +154,7 @@ When both apply (sensitive file in `.aiignore`), you see REDACT instead of full 
 ## GitHub Copilot
 
 **File:** None
-**Docs:** https://docs.github.com/en/copilot/managing-copilot/configuring-content-exclusions
+**Docs:** https://docs.github.com/en/copilot/how-tos/configure-content-exclusion/exclude-content-from-copilot
 
 No `.copilotignore` file exists. The only file-exclusion mechanism is **Content Exclusion**, which:
 - Requires Business or Enterprise plan
