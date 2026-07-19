@@ -13,8 +13,17 @@
     "dev": "tsup --watch",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yjcho9317/aiignore-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yjcho9317/aiignore-cli/issues"
+  },
+  "homepage": "https://github.com/yjcho9317/aiignore-cli#readme",
   "keywords": [
     "ai",
     "ignore",
