@@ -24,7 +24,7 @@ Node.js 18 이상.
 만들 수 있다. `.cursorignore` 하나 쓰는 데 30초면 된다. 그런데:
 
 - Cursor는 `.cursorignore`, Claude Code는 `settings.json` deny 규칙, Gemini CLI는 `.geminiignore`, JetBrains는 `.aiignore`, Windsurf는 아직 `.codeiumignore`를 쓴다는 걸 알고 있는가?
-- Cursor의 ignore가 "best-effort"이고 CVE가 2개 있다는 것, Gemini의 부정 패턴이 깨져있다는 것, Copilot은 ignore 파일 자체가 없다는 걸 알고 있는가?
+- Cursor는 완전 보장을 하지 않고 터미널/MCP는 못 막는다는 것(과거 CVE 2건은 1.7/2.0에서 수정됨), Gemini의 부정 패턴이 깨져있다는 것, Copilot은 ignore 파일 자체가 없다는 걸 알고 있는가?
 - 새 프로젝트 세팅할 때마다 각 도구의 포맷을 찾아볼 생각인가?
 
 `aiignore`가 조사를 대신 해준다. 각 도구의 보안 현황 데이터가 진짜 가치고, CLI는 그걸 적용하는 수단이다.
@@ -51,8 +51,8 @@ aiignore init --force                # 기존 파일 덮어쓰기
 aiignore init -q                     # 무출력 모드
 
 aiignore verify                      # 보호 상태 테이블
-aiignore verify --ci                 # 미보호 시 exit 1
-aiignore verify --strict             # best-effort 아니면 exit 1
+aiignore verify --ci                 # 보호 가능한 도구에 ignore 파일이 없으면 exit 1
+aiignore verify --strict             # 미보호이거나 핵심 패턴이 빠지면 exit 1
 aiignore verify --json               # JSON 출력
 
 aiignore list                        # 지원 도구 및 별칭 목록
@@ -65,8 +65,8 @@ aiignore config path                 # 글로벌 설정 파일 경로 출력
 
 | 도구 | 생성 파일 | 신뢰도 | 주요 이슈 |
 |------|----------|--------|----------|
-| Cursor | `.cursorignore` | 낮음 | "best-effort", Agent 우회, `@` 참조 우회 |
-| Claude Code | `.claude/settings.json` | 중간 | `Read()` deny가 Bash cat도 차단 (테스트 확인) |
+| Cursor | `.cursorignore` | 낮음 | 완전 보장 안 됨; 터미널/MCP 미차단 (CVE는 1.7/2.0에서 수정) |
+| Claude Code | `.claude/settings.json` | 중간 | `Read()` deny가 Bash cat도 차단, 단 임의 서브프로세스는 미차단 |
 | Copilot | 가이드 문서만 | 없음 | 개인 개발자용 ignore 파일 없음 |
 | Gemini CLI | `.geminiignore` | 낮음 | 부정 패턴 깨짐, `.env`/`.pem` 자체 차단 정책 있음 |
 | JetBrains AI | `.aiignore` | 높음 | 가장 안정적. 민감 파일명은 AI가 자체 REDACT |
@@ -82,13 +82,14 @@ aiignore config path                 # 글로벌 설정 파일 경로 출력
 | 분류 | 패턴 |
 |------|------|
 | 환경변수 | `.env`, `.env.*`, `.env.local` |
-| 인증정보 | `credentials.json`, `service-account*.json`, `*secret*`, `token.json` |
+| 인증정보 | `credentials.json`, `service-account*.json`, `serviceAccount*.json`, `.git-credentials`, `*secret*`, `token.json` |
 | 키 | `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.gpg`, `*.asc` |
-| SSH | `.ssh/`, `id_rsa*`, `id_ed25519*`, `id_ecdsa*` |
+| SSH | `.ssh/`, `id_rsa*`, `id_ed25519*`, `id_ecdsa*`, `id_dsa*`, `*.ppk` |
 | 클라우드 | `.aws/`, `.gcp/`, `.azure/`, `gcloud/` |
-| 인프라 | `terraform.tfstate`, `terraform.tfvars`, `.docker/config.json`, `.kube/config` |
-| 레지스트리 & 인증 | `.npmrc`, `.pypirc`, `.netrc`, `*.htpasswd` |
-| 앱 시크릿 | `config/secrets.yml`, `config/master.key`, `vault.json`, `wp-config.php` |
+| 인프라 | `*.tfstate`, `*.tfstate.backup`, `.terraform/`, `.docker/config.json`, `.kube/config` |
+| 레지스트리 & 인증 | `.npmrc`, `.pypirc`, `.netrc`, `.pgpass`, `.my.cnf`, `.s3cfg`, `*.htpasswd` |
+| 앱 시크릿 | `config/secrets.yml`, `config/master.key`, `vault.json`, `.dev.vars`, `local.settings.json`, `wp-config.php` |
+| MCP & AI 설정 | `mcp.json`, `.mcp.json`, `.cursor/mcp.json`, `.aider.conf.yml`, `.aider.chat.history.md` |
 | 데이터베이스 | `*.sqlite`, `*.db`, `dump.sql` |
 | 인증서 | `*.crt`, `*.cer`, `*.ca-bundle` |
 
@@ -139,6 +140,8 @@ roo / roo-code             -> Roo Code
 글로벌 `extraPatterns`는 프로젝트 설정과 합산된다. `tools`는 프로젝트 설정이 우선한다. `aiignore config`로 현재 적용된 설정을 확인할 수 있다.
 
 ## 한계
+
+**이 도구가 막는 것과 못 막는 것.** `aiignore`는 AI 코딩 도구가 *컨텍스트로 읽어 들이는 범위*를 줄인다. 이미 git에 커밋된 시크릿의 유출은 막지 못하며(그건 `.gitignore`·push protection·`gitleaks` 같은 스캐너의 영역), 자율 에이전트의 셸이 ignore 파일을 우회하는 것도 완전히 막지 못한다(그건 샌드박스의 영역). 완벽한 차단이 아니라 첫 번째 방어 레이어로 여겨라.
 
 어떤 AI 도구도 파일 접근을 100% 차단하지 못한다. 모든 도구의 공통 약점: Agent/터미널 모드에서 셸 명령으로 ignore 파일을 우회할 수 있다. Copilot은 개인 개발자용 ignore 자체가 없다.
 

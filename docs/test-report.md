@@ -1,12 +1,12 @@
 # AI Coding Tool Security Reference
 
-Each AI coding tool has a different file-exclusion mechanism with different reliability and known bypass methods. This document summarizes tested behavior as of March 2026.
+Each AI coding tool has a different file-exclusion mechanism with different reliability and known bypass methods. This document summarizes tested behavior. Hands-on tests are from March 2026; vendor-doc/CVE claims were re-verified 2026-07-19 (see `src/data/tool-status.ts` `verifiedAt`).
 
 ## Summary
 
 | Tool | Ignore File | Reliability | File Read Blocked | Terminal Bypass | Special Behavior |
 |------|------------|-------------|-------------------|-----------------|------------------|
-| Cursor | `.cursorignore` | Low | Yes (Ask mode) | Yes (Agent mode) | `@` file reference ignores `.cursorignore` |
+| Cursor | `.cursorignore` | Low | Yes (Ask mode) | Yes (Agent mode) | CVEs fixed in 1.7/2.0; `@` reference now blocked per docs (forum reports conflict) |
 | Claude Code | `.claude/settings.json` | Medium | Yes | **No** (Read deny blocks Bash cat too) | `Read()` pattern alone covers both Read tool and Bash |
 | Gemini CLI | `.geminiignore` | Low | Yes | Yes | Self-blocks `.env`, `.pem`, `credentials.json` by built-in policy |
 | JetBrains AI | `.aiignore` | High | Yes | Yes | AI auto-redacts sensitive-looking content regardless of `.aiignore` |
@@ -29,11 +29,11 @@ Each AI coding tool has a different file-exclusion mechanism with different reli
 | `@.env` file reference in chat | **Not blocked** — `.cursorignore` ignored |
 | Ctrl+P quick open | Excluded from results |
 
-**Known CVEs:**
-- CVE-2025-59944: case-sensitivity bypass
-- CVE-2025-64110: agent rewrite bypass
+**Known CVEs (both fixed — keep Cursor updated):**
+- CVE-2025-59944: case-sensitivity bypass — **fixed in Cursor 1.7**
+- CVE-2025-64110: agent rewrites `.cursorignore` to disable protection — **fixed in Cursor 2.0** (GHSA-vhc2-fjv4-wqch)
 
-**Bottom line:** "Best-effort" per official docs. Blocks AI file reads but not agent terminal access or `@` references.
+**Bottom line:** Docs no longer use the word "best-effort"; current wording is that "complete protection isn't guaranteed due to LLM unpredictability." Blocks AI file reads but not agent terminal/MCP access. Current docs say `@` references are also blocked, though forum reports have conflicted — re-test in your version. Docs URL now: https://cursor.com/docs/reference/ignore-file
 
 ---
 
@@ -54,9 +54,11 @@ Each AI coding tool has a different file-exclusion mechanism with different reli
 
 **Caveat:** `Bash(cat:*.pem)` syntax is invalid — Claude Code rejects `:*` in the middle of a pattern. Only exact filenames work with `Bash(cat:)` format. Since `Read()` covers both, this limitation doesn't matter.
 
-**Known issues:** `permissions.deny` has enforcement bugs ([#6699](https://github.com/anthropics/claude-code/issues/6699), [#6631](https://github.com/anthropics/claude-code/issues/6631), [#8961](https://github.com/anthropics/claude-code/issues/8961))
+**Known issues:** `permissions.deny` has reported enforcement gaps — e.g. [#24846](https://github.com/anthropics/claude-code/issues/24846) (Read deny not applied to `.env`). CVE-2025-55284 (prompt-injection → DNS exfiltration) was fixed pre-1.0.4.
 
-**Bottom line:** More reliable than expected. `Read()` deny is the most effective single-pattern protection across all tools tested.
+**Important caveat:** `Read()` deny blocks the Read tool and `Bash(cat/head/tail/sed ...)`, but it does **not** block an arbitrary subprocess (a `python`/`node` script the agent writes and runs) from reading the file. For that, use Claude Code's Bash sandbox (Linux bubblewrap / macOS Seatbelt) — note the sandbox applies to Bash only; the built-in file tools use the separate permissions system.
+
+**Bottom line:** `Read()` deny is the most effective single-pattern protection across the tools tested, but it is not a hard boundary — pair it with hooks and the sandbox.
 
 ---
 
@@ -77,8 +79,9 @@ Each AI coding tool has a different file-exclusion mechanism with different reli
 **Special behavior:** Gemini CLI has a built-in policy that refuses to display contents of files with sensitive-looking names (`.env`, `.pem`, `credentials.json`) regardless of `.geminiignore`. This is separate from the ignore file mechanism.
 
 **Known issues:**
-- Negation patterns (`!`) are broken
+- Negation patterns (`!`) are broken (issues #5444, #12290 open)
 - `list_dir` ignores `.geminiignore` in Antigravity mode
+- Custom ignore path is now supported via the `CUSTOM_IGNORE_FILE_PATH` env var (PR #16487, 2026-01) — a sign vendors are starting to converge on configurable ignore handling
 
 **Bottom line:** Double protection for common sensitive filenames (built-in + `.geminiignore`), but terminal bypass still works.
 
@@ -158,7 +161,7 @@ When both apply (sensitive file in `.aiignore`), you see REDACT instead of full 
 
 No `.copilotignore` file exists. The only file-exclusion mechanism is **Content Exclusion**, which:
 - Requires Business or Enterprise plan
-- Is configured by org admins, not individual developers
+- Is configured by an organization admin or a repository admin (not by individual developers on a personal plan)
 - Does NOT work in Agent mode, Edit mode, or Copilot CLI
 
 **Bottom line:** Individual developers have no file-level protection. `aiignore` generates a guide document (`.github/copilot-security-guide.md`) with alternative recommendations.
@@ -169,4 +172,4 @@ No `.copilotignore` file exists. The only file-exclusion mechanism is **Content 
 
 All tools share the same fundamental limitation: **agent/terminal modes can bypass ignore files** by executing shell commands (`cat`, `type`, etc.) directly. This is inherent to how AI agents work — they have shell access that operates outside the ignore file system.
 
-The only tool where terminal bypass was NOT observed is **Claude Code**, where `Read()` deny patterns also blocked `Bash(cat ...)` attempts.
+**Claude Code** goes furthest here — `Read()` deny also blocks `Bash(cat/head/tail/sed ...)`. But even Claude Code does not block an arbitrary subprocess (e.g. a `python` script the agent writes) from reading a denied file; that requires the Bash sandbox. So no tool tested offers a hard terminal boundary from the ignore/deny mechanism alone.

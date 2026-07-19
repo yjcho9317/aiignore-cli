@@ -24,7 +24,7 @@ Requires Node.js 18+.
 You could. A `.cursorignore` takes 30 seconds to write. But:
 
 - Do you know that Cursor also needs `.cursorignore`, Claude Code needs `settings.json` deny rules, Gemini CLI needs `.geminiignore`, JetBrains needs `.aiignore`, and Windsurf still uses `.codeiumignore`?
-- Do you know that Cursor's ignore is "best-effort" with 2 known CVEs, that Gemini's negation patterns are broken, or that Copilot has no ignore file at all?
+- Do you know that Cursor doesn't guarantee complete protection and can't block terminal/MCP access (its 2 known CVEs were fixed in 1.7/2.0), that Gemini's negation patterns are broken, or that Copilot has no ignore file at all?
 - Do you want to research each tool's format every time you set up a new project?
 
 `aiignore` does the research for you. The security data behind each tool is the real value — the CLI just applies it.
@@ -51,8 +51,8 @@ aiignore init --force                # overwrite existing files
 aiignore init -q                     # quiet mode (no output)
 
 aiignore verify                      # protection status table
-aiignore verify --ci                 # exit 1 if unprotected
-aiignore verify --strict             # exit 1 if any tool isn't best-effort
+aiignore verify --ci                 # exit 1 if a protectable tool has no ignore file
+aiignore verify --strict             # exit 1 if any tool is unprotected or missing a critical pattern
 aiignore verify --json               # machine-readable output
 
 aiignore list                        # show supported tools and aliases
@@ -65,8 +65,8 @@ aiignore config path                 # print global config file path
 
 | Tool | File Generated | Reliability | Key Issue |
 |------|---------------|-------------|-----------|
-| Cursor | `.cursorignore` | Low | "best-effort", agent bypass, `@` reference bypass |
-| Claude Code | `.claude/settings.json` | Medium | `Read()` deny covers Bash too (tested) |
+| Cursor | `.cursorignore` | Low | not guaranteed; terminal/MCP not blocked (CVEs fixed in 1.7/2.0) |
+| Claude Code | `.claude/settings.json` | Medium | `Read()` deny covers Bash too, but not arbitrary subprocesses |
 | Copilot | guide only | None | no ignore file exists for individual devs |
 | Gemini CLI | `.geminiignore` | Low | negation patterns broken, self-blocks `.env`/`.pem` |
 | JetBrains AI | `.aiignore` | High | most reliable; AI redacts sensitive filenames |
@@ -82,13 +82,14 @@ Patterns are sourced from built-in defaults + security-related entries in your `
 | Category | Patterns |
 |----------|----------|
 | Environment | `.env`, `.env.*`, `.env.local` |
-| Credentials | `credentials.json`, `service-account*.json`, `*secret*`, `token.json` |
+| Credentials | `credentials.json`, `service-account*.json`, `serviceAccount*.json`, `.git-credentials`, `*secret*`, `token.json` |
 | Keys | `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.gpg`, `*.asc` |
-| SSH | `.ssh/`, `id_rsa*`, `id_ed25519*`, `id_ecdsa*` |
+| SSH | `.ssh/`, `id_rsa*`, `id_ed25519*`, `id_ecdsa*`, `id_dsa*`, `*.ppk` |
 | Cloud | `.aws/`, `.gcp/`, `.azure/`, `gcloud/` |
-| Infrastructure | `terraform.tfstate`, `terraform.tfvars`, `.docker/config.json`, `.kube/config` |
-| Registry & Auth | `.npmrc`, `.pypirc`, `.netrc`, `*.htpasswd` |
-| App Secrets | `config/secrets.yml`, `config/master.key`, `vault.json`, `wp-config.php` |
+| Infrastructure | `*.tfstate`, `*.tfstate.backup`, `.terraform/`, `.docker/config.json`, `.kube/config` |
+| Registry & Auth | `.npmrc`, `.pypirc`, `.netrc`, `.pgpass`, `.my.cnf`, `.s3cfg`, `*.htpasswd` |
+| App Secrets | `config/secrets.yml`, `config/master.key`, `vault.json`, `.dev.vars`, `local.settings.json`, `wp-config.php` |
+| MCP & AI Config | `mcp.json`, `.mcp.json`, `.cursor/mcp.json`, `.aider.conf.yml`, `.aider.chat.history.md` |
 | Database | `*.sqlite`, `*.db`, `dump.sql` |
 | Certificates | `*.crt`, `*.cer`, `*.ca-bundle` |
 
@@ -139,6 +140,8 @@ Create `~/.config/aiignore/config.json` to apply personal patterns across all pr
 Global `extraPatterns` are merged with project-level patterns. Project-level `tools` override global `tools`. Run `aiignore config` to see the effective configuration.
 
 ## Limitations
+
+**What this tool does — and does not — protect.** `aiignore` reduces what AI coding tools *read into their context*. It does **not** stop secrets that are already committed to git from leaking (that's the job of `.gitignore`, push protection, and scanners like `gitleaks`), and it does **not** fully stop an autonomous agent's shell from bypassing the ignore file (that's the job of a sandbox). Treat it as the first layer, not the boundary.
 
 No AI tool guarantees 100% file exclusion. All tools share a common weakness: agent/terminal modes can bypass ignore files by running shell commands directly. Copilot has no ignore mechanism at all for individual developers.
 
