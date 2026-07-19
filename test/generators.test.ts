@@ -67,19 +67,75 @@ describe('generateClaudeSettings', () => {
     expect(settings.permissions.deny).toContain('Read(.env)');
   });
 
-  it('replaces aiignore patterns on --force', () => {
+  it('replaces its own previously-generated patterns on --force, keeping user patterns', () => {
+    const settingsDir = path.join(tmpDir, '.claude');
+
+    // First run: aiignore generates Read(.env) and Read(old.pem) and records them.
+    generateClaudeSettings(tmpDir, ['.env', 'old.pem'], 'default');
+
+    // User then adds their own deny rules by hand.
+    const afterGen = JSON.parse(fs.readFileSync(path.join(settingsDir, 'settings.json'), 'utf-8'));
+    afterGen.permissions.deny.push('Write(keep-this)', 'Read(user-secret.txt)');
+    fs.writeFileSync(path.join(settingsDir, 'settings.json'), JSON.stringify(afterGen));
+
+    // --force with a narrower pattern set: aiignore drops its own stale Read(old.pem)
+    // but must not touch the user's hand-added Read() rule.
+    generateClaudeSettings(tmpDir, ['.env'], 'force');
+    const settings = JSON.parse(fs.readFileSync(path.join(settingsDir, 'settings.json'), 'utf-8'));
+    expect(settings.permissions.deny).not.toContain('Read(old.pem)');
+    expect(settings.permissions.deny).toContain('Read(.env)');
+    expect(settings.permissions.deny).toContain('Write(keep-this)');
+    expect(settings.permissions.deny).toContain('Read(user-secret.txt)');
+  });
+
+  it('preserves hand-added Read() deny when no marker file exists (--force)', () => {
     const settingsDir = path.join(tmpDir, '.claude');
     fs.mkdirSync(settingsDir, { recursive: true });
     fs.writeFileSync(
       path.join(settingsDir, 'settings.json'),
-      JSON.stringify({ permissions: { deny: ['Read(old-pattern)', 'Write(keep-this)'] } }),
+      JSON.stringify({ permissions: { deny: ['Read(my-secret)', 'Write(keep-this)'] } }),
     );
 
+    // No aiignore-managed.json yet — a first-ever --force must not delete the
+    // user's existing Read() rules.
     generateClaudeSettings(tmpDir, ['.env'], 'force');
     const settings = JSON.parse(fs.readFileSync(path.join(settingsDir, 'settings.json'), 'utf-8'));
-    expect(settings.permissions.deny).not.toContain('Read(old-pattern)');
+    expect(settings.permissions.deny).toContain('Read(my-secret)');
     expect(settings.permissions.deny).toContain('Write(keep-this)');
     expect(settings.permissions.deny).toContain('Read(.env)');
+  });
+
+  it('is idempotent: a second default run skips instead of rewriting', () => {
+    const first = generateClaudeSettings(tmpDir, ['.env', '*.pem'], 'default');
+    expect(first.created).toBe(true);
+
+    const second = generateClaudeSettings(tmpDir, ['.env', '*.pem'], 'default');
+    expect(second.created).toBe(false);
+    expect(second.skipped).toBe(true);
+  });
+
+  it('reports an update (not a creation) when merging into an existing file', () => {
+    const settingsDir = path.join(tmpDir, '.claude');
+    fs.mkdirSync(settingsDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(settingsDir, 'settings.json'),
+      JSON.stringify({ permissions: { deny: ['Write(package.json)'] } }),
+    );
+
+    const result = generateClaudeSettings(tmpDir, ['.env'], 'default');
+    expect(result.created).toBe(true);
+    expect(result.message).toMatch(/updated/i);
+  });
+
+  it('does not overwrite a settings.json with invalid JSON', () => {
+    const settingsDir = path.join(tmpDir, '.claude');
+    fs.mkdirSync(settingsDir, { recursive: true });
+    const broken = '{ this is not valid json ';
+    fs.writeFileSync(path.join(settingsDir, 'settings.json'), broken);
+
+    const result = generateClaudeSettings(tmpDir, ['.env'], 'default');
+    expect(result.skipped).toBe(true);
+    expect(fs.readFileSync(path.join(settingsDir, 'settings.json'), 'utf-8')).toBe(broken);
   });
 
   it('preserves other settings fields', () => {
