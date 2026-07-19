@@ -42,11 +42,11 @@ export const generateCursorignore = createIgnoreGenerator({
   toolName: 'Cursor',
   fileName: '.cursorignore',
   warnings: [
-    'NOTE: Cursor treats .cursorignore as "best-effort" — not guaranteed.',
-    'CVE-2025-59944: case-sensitivity bypass known.',
-    'CVE-2025-64110: agent rewrite bypass known.',
+    'Cursor does not guarantee complete protection (LLM unpredictability, per docs).',
+    'Terminal and MCP server tools are not blocked by .cursorignore.',
+    'CVE-2025-59944 fixed in Cursor 1.7, CVE-2025-64110 in 2.0 — keep Cursor updated.',
   ],
-  message: '"best-effort" — not guaranteed',
+  message: 'not guaranteed — keep Cursor updated (>=2.0)',
 });
 
 export function buildIgnoreFile(
@@ -100,26 +100,35 @@ const PATTERN_CATEGORIES: { name: string; test: (p: string) => boolean }[] = [
     name: 'SSH',
     test: (p) =>
       p.includes('ssh') || p.includes('id_rsa') || p.includes('id_ed25519') ||
-      p.includes('id_ecdsa') || p.includes('known_hosts'),
+      p.includes('id_ecdsa') || p.includes('id_dsa') || p.includes('.ppk') ||
+      p.includes('known_hosts'),
   },
   {
     name: 'Cloud & Infrastructure',
     test: (p) =>
       p.includes('.aws') || p.includes('.gcp') || p.includes('.azure') || p.includes('gcloud') ||
-      p.includes('terraform') || p.includes('.docker/') || p.includes('kube'),
+      p.includes('terraform') || p.includes('.tfstate') || p.includes('.docker/') || p.includes('kube') ||
+      p.includes('.dev.vars') || p.includes('local.settings.json') || p.includes('.s3cfg') || p.includes('.boto'),
   },
   {
     name: 'Registry & Auth',
     test: (p) =>
-      p.includes('.npmrc') || p.includes('.pypirc') || p.includes('.netrc') ||
-      p.includes('htpasswd') || p.includes('wp-config'),
+      p.includes('.npmrc') || p.includes('.pypirc') || p.includes('netrc') ||
+      p.includes('htpasswd') || p.includes('wp-config') ||
+      p.includes('.pgpass') || p.includes('.my.cnf'),
+  },
+  {
+    name: 'MCP & AI Config',
+    test: (p) =>
+      p.includes('mcp.json') || p.includes('.aider.'),
   },
   {
     name: 'Application Secrets & Database',
     test: (p) =>
       p.includes('vault') || p.includes('master.key') ||
       p.includes('.sqlite') || p.includes('.db') || p.includes('dump.sql') ||
-      p.includes('.dump') || p.includes('secrets.yml'),
+      p.includes('.dump') || p.includes('secrets.yml') || p.includes('secrets.toml') ||
+      p.includes('appsettings'),
   },
 ];
 
