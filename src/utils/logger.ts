@@ -7,11 +7,12 @@ export const logger = {
   success(msg: string) {
     console.log(chalk.green('+'), msg);
   },
+  // stderr, not stdout, so warnings don't corrupt `verify --json` piped to jq
   warn(msg: string) {
-    console.log(chalk.yellow('!'), msg);
+    console.error(chalk.yellow('!'), msg);
   },
   error(msg: string) {
-    console.log(chalk.red('x'), msg);
+    console.error(chalk.red('x'), msg);
   },
   dim(msg: string) {
     console.log(chalk.dim(msg));

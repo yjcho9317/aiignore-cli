@@ -4,6 +4,7 @@ import { initCommand } from './commands/init.js';
 import { verifyCommand } from './commands/verify.js';
 import { listCommand } from './commands/list.js';
 import { configCommand } from './commands/config.js';
+import { logger } from './utils/logger.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
@@ -29,8 +30,8 @@ program
 program
   .command('verify')
   .description('Check protection status for detected AI tools')
-  .option('--ci', 'CI mode: exit code 1 if unprotected')
-  .option('--strict', 'Strict mode: exit code 1 if any tool is not best-effort')
+  .option('--ci', 'CI mode: exit 1 if a protectable tool has no ignore file (guide-only tools excluded)')
+  .option('--strict', 'Strict mode: exit 1 if any tool is unprotected or missing a critical pattern')
   .option('--json', 'Output results as JSON')
   .option('-q, --quiet', 'Suppress non-essential output')
   .action(verifyCommand);
@@ -46,4 +47,8 @@ program
   .argument('[sub]', '"path" to print global config path')
   .action(configCommand);
 
-program.parse();
+// surface failures as a clean message instead of a raw stack trace
+program.parseAsync(process.argv).catch((err) => {
+  logger.error(err instanceof Error ? err.message : String(err));
+  process.exit(1);
+});

@@ -1,5 +1,7 @@
 import ora from 'ora';
 import chalk from 'chalk';
+import fs from 'node:fs';
+import path from 'node:path';
 import { scanForSecrets } from '../scanners/secret-detector.js';
 import { detectTools, ALL_TOOL_IDS } from '../scanners/tool-detector.js';
 import { runGenerators } from '../generators/index.js';
@@ -53,7 +55,10 @@ export async function initCommand(options: InitOptions): Promise<void> {
   } else if (options.only) {
     const { ids, invalid } = resolveToolIds(options.only);
     if (invalid.length > 0) {
-      spinnerTools?.fail(`Unknown tool(s): ${invalid.join(', ')}`);
+      // quiet mode has no spinner, so print the reason — else exit 1 is silent
+      const msg = `Unknown tool(s): ${invalid.join(', ')}`;
+      if (spinnerTools) spinnerTools.fail(msg);
+      else logger.error(msg);
       logger.info('Run `aiignore list` to see available tools.');
       process.exit(1);
     }
@@ -79,20 +84,38 @@ export async function initCommand(options: InitOptions): Promise<void> {
     return;
   }
 
+  const mode = options.force ? 'force' : options.append ? 'append' : 'default';
+
   if (options.dryRun) {
-    log.heading('Dry run — files that would be created:');
+    log.heading('Dry run — planned changes:');
     for (const toolId of targetToolIds) {
       const status = TOOL_STATUS[toolId];
-      if (status) {
-        console.log(`  ${status.ignoreFile === 'none' ? '  guide' : '  ' + status.ignoreFile} (${status.tool})`);
+      if (!status) continue;
+
+      if (status.ignoreFile === 'none') {
+        console.log(`  ${'guide'.padEnd(12)} ${status.tool} (guide document)`);
+        continue;
       }
+
+      const exists = fs.existsSync(path.join(projectDir, status.ignoreFile));
+      let action: string;
+      if (!exists) {
+        action = 'create';
+      } else if (mode === 'force') {
+        action = 'overwrite';
+      } else if (mode === 'append') {
+        action = 'add patterns';
+      } else {
+        // Claude Code merges into an existing settings.json; the rest skip.
+        action = toolId === 'claudeCode' ? 'update' : 'skip';
+      }
+      console.log(`  ${action.padEnd(12)} ${status.ignoreFile} (${status.tool})`);
     }
     console.log();
-    log.info('Run without --dry-run to create files.');
+    log.info('Run without --dry-run to apply.');
     return;
   }
 
-  const mode = options.force ? 'force' : options.append ? 'append' : 'default';
   log.heading('Generating ignore files...');
   const results = runGenerators(projectDir, scanResult.patterns, targetToolIds, mode);
 
